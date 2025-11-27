@@ -17,7 +17,7 @@ st.sidebar.title('⚙️ Settings')
 api_key = st.sidebar.text_input("Enter your OpenAI API key:", type="password")
 temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7)
 tokens = st.sidebar.slider("Max Tokens", 50, 500, 100)
-engine = st.sidebar.selectbox("Select engine", ["gpt-5", "gpt3", "gpt-5-mini", "gpt-4o-mini", "gpt-4-turbo"])
+engine = st.sidebar.selectbox("Select engine", ["gpt-5", "gpt-3-mini", "gpt-5-mini", "gpt-4o-mini", "gpt-4-turbo"])
 
 # --- Function to Generate Response ---
 def generate_response(question, api_key, temperature, tokens, engine):
