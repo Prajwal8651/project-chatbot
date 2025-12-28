@@ -1,1 +1,0 @@
-## This project involves developing a GenAI-based chatbot using Python, designed to provide intelligent and interactive responses.
