@@ -58,31 +58,41 @@ pipeline {
             }
         }
 
-        stage('Update kubeconfig') {
-            steps {
-                sh '''
-                    aws eks update-kubeconfig \
-                      --region ${AWS_REGION} \
-                      --name ${CLUSTER_NAME}
-                '''
-            }
-        }
-
         stage('Deploy to EKS') {
             steps {
-                sh '''
-                    sed -i "s|replace|${IMAGE_NAME}|g" Deployment.yml
-                    kubectl apply -f Deployment.yml -n ${NAMESPACE}
-                '''
+                withKubeConfig(
+                    caCertificate: '',
+                    clusterName: 'devops-cluster',
+                    contextName: '',
+                    credentialsId: '',
+                    namespace: 'devops-chatbot',
+                    restrictKubeConfigAccess: false,
+                    serverUrl: 'https://E2230E4C1EFE686FBCB10EAFD44571D3.gr7.us-west-2.eks.amazonaws.com'
+                ) {
+                    sh '''
+                        sed -i "s|replace|${IMAGE_NAME}|g" Deployment.yml
+                        kubectl apply -f Deployment.yml -n ${NAMESPACE}
+                    '''
+                }
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                sh '''
-                    kubectl get pods -n ${NAMESPACE}
-                    kubectl get svc -n ${NAMESPACE}
-                '''
+                withKubeConfig(
+                    caCertificate: '',
+                    clusterName: 'devops-cluster',
+                    contextName: '',
+                    credentialsId: '',
+                    namespace: 'devops-chatbot',
+                    restrictKubeConfigAccess: false,
+                    serverUrl: 'https://E2230E4C1EFE686FBCB10EAFD44571D3.gr7.us-west-2.eks.amazonaws.com'
+                ) {
+                    sh '''
+                        kubectl get pods -n ${NAMESPACE}
+                        kubectl get svc -n ${NAMESPACE}
+                    '''
+                }
             }
         }
     }
