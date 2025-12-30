@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-chatbot
+  namespace: devops-chatbot
+  labels:
+    app: devops-chatbot
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: devops-chatbot
+  template:
+    metadata:
+      labels:
+        app: devops-chatbot
+    spec:
+      containers:
+        - name: devops-chatbot
+          image: replace
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8501
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "1Gi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-chatbot-service
+  namespace: devops-chatbot
+  labels:
+    app: devops-chatbot
+spec:
+  type: LoadBalancer
+  selector:
+    app: devops-chatbot
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8501
