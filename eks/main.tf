@@ -208,7 +208,7 @@ resource "aws_eks_node_group" "AskAI" {
     min_size     = 3
   }
 
-  instance_types = ["t2.medium"]
+  instance_types = ["m7i-flex.large"]
 
   remote_access {
     ec2_ssh_key               = var.ssh_key_name
