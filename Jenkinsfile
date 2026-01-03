@@ -2,8 +2,6 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
         IMAGE_NAME   = "prajwal8651/chatbot:${GIT_COMMIT}"
         AWS_REGION   = "us-west-2"
         CLUSTER_NAME = "AskAI-cluster"
