@@ -2,6 +2,8 @@ pipeline {
     agent any
 
     environment {
+        AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
         IMAGE_NAME   = "prajwal8651/chatbot:${GIT_COMMIT}"
         AWS_REGION   = "us-west-2"
         CLUSTER_NAME = "AskAI-cluster"
@@ -19,7 +21,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                  docker build -t ${IMAGE_NAME} .
+                    docker build -t ${IMAGE_NAME} .
                 '''
             }
         }
@@ -27,8 +29,8 @@ pipeline {
         stage('Test Docker Image') {
             steps {
                 sh '''
-                  docker rm -f chatbot-container || true
-                  docker run -d --name chatbot-container -p 9001:8501 ${IMAGE_NAME}
+                    docker rm -f chatbot-container || true
+                    docker run -d --name chatbot-container -p 9001:8501 ${IMAGE_NAME}
                 '''
             }
         }
@@ -43,8 +45,8 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                      echo $DOCKER_PASSWORD | docker login \
-                      -u $DOCKER_USERNAME --password-stdin
+                        echo $DOCKER_PASSWORD | docker login \
+                        -u $DOCKER_USERNAME --password-stdin
                     '''
                 }
             }
@@ -53,44 +55,45 @@ pipeline {
         stage('Push Image to Docker Hub') {
             steps {
                 sh '''
-                  docker push ${IMAGE_NAME}
+                    docker push ${IMAGE_NAME}
                 '''
             }
         }
 
-        stage('Update kubeconfig (IAM Role)') {
+        stage('Update kubeconfig for EKS') {
             steps {
                 sh '''
-                  aws eks update-kubeconfig \
-                    --region ${AWS_REGION} \
-                    --name ${CLUSTER_NAME}
-                '''
-            }
-        }
-
-        stage('Create Namespace (if not exists)') {
-            steps {
-                sh '''
-                  kubectl get namespace ${NAMESPACE} \
-                  || kubectl create namespace ${NAMESPACE}
+                    aws eks update-kubeconfig \
+                      --region ${AWS_REGION} \
+                      --name ${CLUSTER_NAME}
                 '''
             }
         }
 
         stage('Deploy to EKS') {
             steps {
-                sh '''
-                  sed -i "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}|g" Deployment.yml
-                  kubectl apply -f Deployment.yml -n ${NAMESPACE}
-                '''
+                withKubeConfig(
+                    caCertificate: '',
+                    clusterName: 'AskAI-cluster',
+                    contextName: '',
+                    credentialsId: 'kube',
+                    namespace: 'devops-chatbot',
+                    restrictKubeConfigAccess: false,
+                    serverUrl: 'https://502776B38658BB590BFB0CF951C186C5.gr7.us-west-2.eks.amazonaws.com'
+                ) {
+                    sh '''
+                        sed -i "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}|g" Deployment.yml
+                        kubectl apply -f Deployment.yml -n ${NAMESPACE}
+                    '''
+                }
             }
         }
 
         stage('Verify Deployment') {
             steps {
                 sh '''
-                  kubectl get pods -n ${NAMESPACE}
-                  kubectl get svc  -n ${NAMESPACE}
+                    kubectl get pods -n ${NAMESPACE}
+                    kubectl get svc  -n ${NAMESPACE}
                 '''
             }
         }
