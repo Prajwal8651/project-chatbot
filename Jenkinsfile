@@ -6,101 +6,92 @@ pipeline {
         AWS_REGION   = "us-west-2"
         CLUSTER_NAME = "devops-cluster"
         NAMESPACE    = "devops-chatbot"
-        AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
     }
 
     stages {
 
-        stage('Git-checkout') {
+        stage('Git Checkout') {
             steps {
                 git url: 'https://github.com/Prajwal8651/project-chatbot.git', branch: 'main'
             }
         }
 
-        stage('Building-Stage') {
+        stage('Build Docker Image') {
             steps {
                 sh '''
-                    printenv
-                    docker build -t ${IMAGE_NAME} .
+                  docker build -t ${IMAGE_NAME} .
                 '''
             }
         }
 
-        stage('Testing-Stage') {
+        stage('Test Docker Image') {
             steps {
                 sh '''
-                    if docker ps -a --format '{{.Names}}' | grep -w chatbot-container > /dev/null; then
-                        docker rm -f chatbot-container
-                    fi
-                    docker run -it -d --name chatbot-container -p 9001:8501 ${IMAGE_NAME}
+                  docker rm -f chatbot-container || true
+                  docker run -d --name chatbot-container -p 9001:8501 ${IMAGE_NAME}
                 '''
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Docker Login') {
             steps {
-                script {
-                    withCredentials([
-                        usernamePassword(
-                            credentialsId: 'docker-hub-creds',
-                            usernameVariable: 'DOCKER_USERNAME',
-                            passwordVariable: 'DOCKER_PASSWORD'
-                        )
-                    ]) {
-                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
-                    }
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'docker-hub-creds',
+                        usernameVariable: 'DOCKER_USERNAME',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                      echo $DOCKER_PASSWORD | docker login \
+                      -u $DOCKER_USERNAME --password-stdin
+                    '''
                 }
             }
         }
 
-        stage('Pushing to Docker hub') {
-            steps {
-                sh "docker push ${IMAGE_NAME}"
-            }
-        }
-
-        stage('Cluster-Update') {
+        stage('Push Image to Docker Hub') {
             steps {
                 sh '''
-                    aws eks update-kubeconfig \
-                      --region ${AWS_REGION} \
-                      --name ${CLUSTER_NAME}
+                  docker push ${IMAGE_NAME}
                 '''
             }
         }
 
-        stage('Deploying to EKS cluster') {
+        stage('Update kubeconfig (IAM Role)') {
             steps {
-                withKubeConfig(
-                    caCertificate: '',
-                    clusterName: 'devops-cluster',
-                    contextName: '',
-                    credentialsId: 'kube',
-                    namespace: 'devops-chatbot',
-                    restrictKubeConfigAccess: false,
-                    serverUrl: 'https://B21FFB423837C8CDB50D491BC21F4D20.gr7.us-west-2.eks.amazonaws.com'
-                ) {
-                    sh "sed -i 's|replace|${IMAGE_NAME}|g' Deployment.yml"
-                    sh "kubectl apply -f Deployment.yml -n ${NAMESPACE}"
-                }
+                sh '''
+                  aws eks update-kubeconfig \
+                    --region ${AWS_REGION} \
+                    --name ${CLUSTER_NAME}
+                '''
             }
         }
 
-        stage('Verify the deployment') {
+        stage('Create Namespace (if not exists)') {
             steps {
-                withKubeConfig(
-                    caCertificate: '',
-                    clusterName: 'devops-cluster',
-                    contextName: '',
-                    credentialsId: 'kube',
-                    namespace: 'devops-chatbot',
-                    restrictKubeConfigAccess: false,
-                    serverUrl: 'https://B21FFB423837C8CDB50D491BC21F4D20.gr7.us-west-2.eks.amazonaws.com'
-                ) {
-                    sh "kubectl get pods -n ${NAMESPACE}"
-                    sh "kubectl get services -n ${NAMESPACE}"
-                }
+                sh '''
+                  kubectl get namespace ${NAMESPACE} \
+                  || kubectl create namespace ${NAMESPACE}
+                '''
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                sh '''
+                  sed -i "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}|g" Deployment.yml
+                  kubectl apply -f Deployment.yml -n ${NAMESPACE}
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                  kubectl get pods -n ${NAMESPACE}
+                  kubectl get svc  -n ${NAMESPACE}
+                '''
             }
         }
     }

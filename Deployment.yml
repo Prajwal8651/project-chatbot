@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: devops-chatbot
-          image: replace
+          image: IMAGE_PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8501
