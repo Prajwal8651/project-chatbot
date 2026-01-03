@@ -1,15 +1,15 @@
 output "cluster_id" {
-  value = aws_eks_cluster.devops.id
+  value = aws_eks_cluster.AskAI.id
 }
 
 output "node_group_id" {
-  value = aws_eks_node_group.devops.id
+  value = aws_eks_node_group.AskAI.id
 }
 
 output "vpc_id" {
-  value = aws_vpc.devops_vpc.id
+  value = aws_vpc.AskAI_vpc.id
 }
 
 output "subnet_id" {
-  value = aws_subnet.devops_subnet[*].id
+  value = aws_subnet.AskAI_subnet[*].id
 }

@@ -1,13 +1,3 @@
-terraform {
-  backend "s3" {
-    bucket       = "terraform-state-1766928319"
-    key          = "pre-prod/terraform.tfstate"
-    region       = "us-west-2"
-    use_lockfile = true
-    encrypt      = true
-  }
-}
-
 ############################
 # Provider
 ############################
@@ -18,68 +8,64 @@ provider "aws" {
 ############################
 # VPC
 ############################
-resource "aws_vpc" "devops_chatbot_vpc" {
+resource "aws_vpc" "AskAI_vpc" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "devops-chatbot-vpc"
+    Name = "AskAI_vpc"
   }
 }
 
 ############################
 # Subnets (2 public subnets)
 ############################
-resource "aws_subnet" "devops_chatbot_subnet" {
-  count  = 2
-  vpc_id = aws_vpc.devops_chatbot_vpc.id
-  cidr_block = cidrsubnet(
-    aws_vpc.devops_chatbot_vpc.cidr_block,
-    8,
-    count.index
-  )
+resource "aws_subnet" "AskAI_subnet" {
+  count = 2
+  vpc_id = aws_vpc.AskAI_vpc.id
+  cidr_block = cidrsubnet(aws_vpc.AskAI_vpc.cidr_block, 8, count.index)
 
-  availability_zone       = element(["us-west-2a", "us-west-2b"], count.index)
+  availability_zone = element(["us-west-2a", "us-west-2b"], count.index)
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "devops-chatbot-subnet-${count.index}"
+    Name = "AskAI_subnet-${count.index}"
   }
 }
 
 ############################
 # Internet Gateway
 ############################
-resource "aws_internet_gateway" "devops_chatbot_igw" {
-  vpc_id = aws_vpc.devops_chatbot_vpc.id
+resource "aws_internet_gateway" "AskAI_igw" {
+  vpc_id = aws_vpc.AskAI_vpc.id
 
   tags = {
-    Name = "devops-chatbot-igw"
+    Name = "AskAI_igw"
   }
 }
 
 ############################
 # Route Table
 ############################
-resource "aws_route_table" "devops_chatbot_rt" {
-  vpc_id = aws_vpc.devops_chatbot_vpc.id
+resource "aws_route_table" "AskAI_rt" {
+  vpc_id = aws_vpc.AskAI_vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.devops_chatbot_igw.id
+    gateway_id = aws_internet_gateway.AskAI_igw.id
   }
 
   tags = {
-    Name = "devops-chatbot-rt"
+    Name = "AskAI_route_table"
   }
 }
 
 ############################
 # Route Table Association
 ############################
-resource "aws_route_table_association" "devops_chatbot_rt_assoc" {
-  count          = 2
-  subnet_id      = aws_subnet.devops_chatbot_subnet[count.index].id
-  route_table_id = aws_route_table.devops_chatbot_rt.id
+resource "aws_route_table_association" "AskAI_rt_assoc" {
+  count = 2
+  subnet_id = aws_subnet.AskAI_subnet[count.index].id
+  route_table_id = aws_route_table.AskAI_rt.id
 }
 
 ############################
@@ -87,49 +73,49 @@ resource "aws_route_table_association" "devops_chatbot_rt_assoc" {
 ############################
 
 # EKS Cluster Security Group
-resource "aws_security_group" "devops_chatbot_cluster_sg" {
-  vpc_id = aws_vpc.devops_chatbot_vpc.id
+resource "aws_security_group" "AskAI_cluster_sg" {
+  vpc_id = aws_vpc.AskAI_vpc.id
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
-    Name = "devops-chatbot-cluster-sg"
+    Name = "AskAI-cluster-sg"
   }
 }
 
 # Worker Node Security Group
-resource "aws_security_group" "devops_chatbot_node_sg" {
-  vpc_id = aws_vpc.devops_chatbot_vpc.id
+resource "aws_security_group" "AskAI_node_sg" {
+  vpc_id = aws_vpc.AskAI_vpc.id
 
   ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
-    Name = "devops-chatbot-node-sg"
+    Name = "AskAI-node-sg"
   }
 }
 
 ############################
 # IAM Role - EKS Cluster
 ############################
-resource "aws_iam_role" "devops_chatbot_eks_cluster_role" {
-  name = "devops-chatbot-eks-cluster-role"
+resource "aws_iam_role" "AskAI_eks_cluster_role" {
+  name = "AskAI_eks_cluster_role"
 
   assume_role_policy = <<EOF
 {
@@ -148,15 +134,15 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "cluster_policy" {
-  role       = aws_iam_role.devops_chatbot_eks_cluster_role.name
+  role       = aws_iam_role.AskAI_eks_cluster_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
 ############################
 # IAM Role - Worker Nodes
 ############################
-resource "aws_iam_role" "devops_chatbot_eks_node_role" {
-  name = "devops-chatbot-eks-node-role"
+resource "aws_iam_role" "AskAI_eks_node_role" {
+  name = "AskAI_eks_node_role"
 
   assume_role_policy = <<EOF
 {
@@ -175,30 +161,30 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "node_worker_policy" {
-  role       = aws_iam_role.devops_chatbot_eks_node_role.name
+  role       = aws_iam_role.AskAI_eks_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }
 
 resource "aws_iam_role_policy_attachment" "node_cni_policy" {
-  role       = aws_iam_role.devops_chatbot_eks_node_role.name
+  role       = aws_iam_role.AskAI_eks_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
 }
 
 resource "aws_iam_role_policy_attachment" "node_registry_policy" {
-  role       = aws_iam_role.devops_chatbot_eks_node_role.name
+  role       = aws_iam_role.AskAI_eks_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
 ############################
 # EKS Cluster
 ############################
-resource "aws_eks_cluster" "devops_chatbot" {
-  name     = "devops-chatbot-cluster"
-  role_arn = aws_iam_role.devops_chatbot_eks_cluster_role.arn
+resource "aws_eks_cluster" "AskAI" {
+  name     = "AskAI-cluster"
+  role_arn = aws_iam_role.AskAI_eks_cluster_role.arn
 
   vpc_config {
-    subnet_ids         = aws_subnet.devops_chatbot_subnet[*].id
-    security_group_ids = [aws_security_group.devops_chatbot_cluster_sg.id]
+    subnet_ids         = aws_subnet.AskAI_subnet[*].id
+    security_group_ids = [aws_security_group.AskAI_cluster_sg.id]
   }
 
   depends_on = [
@@ -209,12 +195,12 @@ resource "aws_eks_cluster" "devops_chatbot" {
 ############################
 # EKS Node Group
 ############################
-resource "aws_eks_node_group" "devops_chatbot" {
-  cluster_name    = aws_eks_cluster.devops_chatbot.name
-  node_group_name = "devops-chatbot-node-group"
-  node_role_arn   = aws_iam_role.devops_chatbot_eks_node_role.arn
+resource "aws_eks_node_group" "AskAI" {
+  cluster_name    = aws_eks_cluster.AskAI.name
+  node_group_name = "AskAI-node-group"
+  node_role_arn   = aws_iam_role.AskAI_eks_node_role.arn
 
-  subnet_ids = aws_subnet.devops_chatbot_subnet[*].id
+  subnet_ids = aws_subnet.AskAI_subnet[*].id
 
   scaling_config {
     desired_size = 3
@@ -226,7 +212,7 @@ resource "aws_eks_node_group" "devops_chatbot" {
 
   remote_access {
     ec2_ssh_key               = var.ssh_key_name
-    source_security_group_ids = [aws_security_group.devops_chatbot_node_sg.id]
+    source_security_group_ids = [aws_security_group.AskAI_node_sg.id]
   }
 
   depends_on = [
