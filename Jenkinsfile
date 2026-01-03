@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME   = "prajwal8651/chatbot:${GIT_COMMIT}"
         AWS_REGION   = "us-west-2"
-        CLUSTER_NAME = "devops-cluster"
+        CLUSTER_NAME = "AskAI-cluster"
         NAMESPACE    = "devops-chatbot"
     }
 
