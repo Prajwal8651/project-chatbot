@@ -77,7 +77,7 @@ pipeline {
                     credentialsId: 'kube',
                     namespace: 'devops-chatbot',
                     restrictKubeConfigAccess: false,
-                    serverUrl: 'https://502776B38658BB590BFB0CF951C186C5.gr7.us-west-2.eks.amazonaws.com'
+                    serverUrl: 'https://E91C16DFDD5F678E773F461A9C64F728.gr7.us-west-2.eks.amazonaws.com'
                 ) {
                     sh '''
                         sed -i "s|IMAGE_PLACEHOLDER|${IMAGE_NAME}|g" Deployment.yml
