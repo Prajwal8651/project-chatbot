@@ -1,4 +1,4 @@
-![alt text](
+![alt text](https://github.com/Prajwal8651/project-chatbot/blob/9354675d06ddf7a4c40046d46db21eef257af184/image%20(2).png)
 
 # Itkannadigaru Chatbot Infrastructure
 
